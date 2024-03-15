@@ -454,7 +454,7 @@ def run_ros_node(node, event):
 def update_ui_periodically(app, event):
     while not event.is_set():
         app.processEvents()
-        time.sleep(0.005)  # 이벤트 루프가 너무 빠르게 돌지 않도록 약간의 지연을 추가
+        time.sleep(0.004)  # 이벤트 루프가 너무 빠르게 돌지 않도록 약간의 지연을 추가
 
 def main(args=None):
     rclpy.init(args=args)
