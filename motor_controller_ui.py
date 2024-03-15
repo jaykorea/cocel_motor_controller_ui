@@ -28,7 +28,8 @@ class ClickableComboBox(QComboBox):
 class MotorControlUI(QWidget):
     def __init__(self, node):
         super().__init__()
-        self.resize(800, 200)  # 너비 1000px, 높이 400px로 설정
+        #self.resize(800, 200)  # 너비 1000px, 높이 400px로 설정
+        self.setFixedSize(1350,310)
         self.node = node
         self.subscription = None
         self.ros_connected = False  # ROS 연결 상태 추적 변수 추가
@@ -174,8 +175,8 @@ class MotorControlUI(QWidget):
 
         for control in ['Pos', 'Vel', 'Tau']:
             slider = QSlider(Qt.Horizontal, self)
-            slider.setMinimum(-10000)
-            slider.setMaximum(10000)
+            slider.setMinimum(-15000)
+            slider.setMaximum(15000)
             slider.setMinimumWidth(250)
             slider.valueChanged.connect(self.updateSliderValue)
             motor_layout.addWidget(QLabel(control))
@@ -266,6 +267,8 @@ class MotorControlUI(QWidget):
             kd_input = motor_control['Kd']
             kp_input.setEnabled(False)
             kd_input.setEnabled(False)
+        self.pub_topic_input.setEnabled(False)
+        self.frequency_input.setEnabled(False) # 여긴 칸 비활성화 때린는 파트요
         if not self.is_publishing:
             try:
                 frequency = float(self.frequency_input.text())
@@ -286,9 +289,10 @@ class MotorControlUI(QWidget):
                 kd_input = motor_control['Kd']
                 kp_input.setEnabled(True)
                 kd_input.setEnabled(True)
-
+            self.pub_topic_input.setEnabled(True)
+            self.frequency_input.setEnabled(True) # 여긴 칸 활성화 때린는 파트요
     def set_zero(self):
-        # 모든 모터 컨트롤의 슬라이더 값을 0으로 설정하고, 레이블을 '0'으로 업데이트하는 메서드입니다.
+        # 모든 모터 컨트롤의 슬라이더 값을 0으로 설정하고, 레이블을 '0'으로 업데이트하는 메서드.
         for motor_control in self.motor_controls:
             for control in ['Pos', 'Vel', 'Tau']:
                 slider = motor_control[control]['slider']
@@ -341,7 +345,6 @@ class MotorControlUI(QWidget):
             QMessageBox.critical(self, "Error", "Selected topic is not of type 'Float32MultiArray'.")
             return
 
-        # 새 구독 설정
         try:
             self.change_subscription(selected_topic)
         except Exception as e:
@@ -353,17 +356,11 @@ class MotorControlUI(QWidget):
                 self.node.destroy_subscription(self.subscription)
                 self.subscription = None
 
-            # 구독을 파괴한 후, 새 구독을 생성하기 전에 rclpy.spin_once 호출을 일시적으로 중지
-            # 또는 spin_once 호출을 관리하는 로직을 조정
-
             self.subscription = self.node.create_subscription(
                 Float32MultiArray, topic_name, self.topic_callback, 10)
             print(f"Subscribed to {topic_name}")
 
     def topic_callback(self, msg):
-        # msg.data는 Float32MultiArray 메시지의 float32[] data 필드입니다.
-        # 이 예제에서는 msg.data가 [motor_id, pos, vel, motor_id, pos, vel, ...] 형태로 되어 있다고 가정합니다.
-        # 실제 데이터 구조에 맞게 아래 코드를 조정해야 할 수 있습니다.
         self.data = msg.data
         self.update_plot()
 
@@ -377,11 +374,6 @@ class MotorControlUI(QWidget):
         vel_values = self.data[2::4]  # 속도 값
         torque_values = self.data[3::4]  # 토크 값
 
-        #print(motor_ids)
-        #print(pos_values)
-        #print(vel_values)
-        #print(torque_values)
-    
         # x 축 값 설정
         x_values = range(len(motor_ids))
 
@@ -397,11 +389,11 @@ class MotorControlUI(QWidget):
         # 그래프 축 및 범례 설정
         ax.set_xlabel('Motor ID')
         ax.set_ylabel('Values')
-        ax.set_title('Motor Status')
+        ax.set_title('Motor Status').set_fontsize('medium')
         ax.legend()
 
         # y 축 범위 설정
-        ax.set_ylim(-35.0, 35.0)
+        ax.set_ylim(-30.0, 30.0)
     
         self.plot_canvas.draw()  # 캔버스 리프레시
 
@@ -411,9 +403,9 @@ class MotorControlUI(QWidget):
 
         # 만약 플롯이 가시적이라면 창의 높이를 조정합니다.
         if self.plot_canvas.isVisible():
-            self.resize(self.width(), 700)  # 플롯이 보이는 경우 창의 높이를 800px로 설정
+            self.setFixedSize(self.width(),700)
         else:
-            self.resize(self.width(), 200)  # 플롯이 숨겨진 경우 창의 높이를 400px로 설정
+            self.setFixedSize(self.width(),310)
 
     def closeEvent(self, event):
         if self.is_publishing:
@@ -444,7 +436,7 @@ def run_ros_node(node, event):
 def update_ui_periodically(app, event):
     while not event.is_set():
         app.processEvents()
-        time.sleep(0.01)  # 이벤트 루프가 너무 빠르게 돌지 않도록 약간의 지연을 추가
+        time.sleep(0.005)  # 이벤트 루프가 너무 빠르게 돌지 않도록 약간의 지연을 추가
 
 def main(args=None):
     rclpy.init(args=args)
