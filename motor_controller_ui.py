@@ -3,6 +3,7 @@ from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QIcon, QPixmap
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import numpy as np
 import os
 import sys
 import rclpy
@@ -175,8 +176,8 @@ class MotorControlUI(QWidget):
 
         for control in ['Pos', 'Vel', 'Tau']:
             slider = QSlider(Qt.Horizontal, self)
-            slider.setMinimum(-15000)
-            slider.setMaximum(15000)
+            slider.setMinimum(-20000)
+            slider.setMaximum(20000)
             slider.setMinimumWidth(250)
             slider.valueChanged.connect(self.updateSliderValue)
             motor_layout.addWidget(QLabel(control))
@@ -379,9 +380,23 @@ class MotorControlUI(QWidget):
 
         # 그래프 그리기
         #ax.plot(motor_ids, pos_values, 'ro-', label='Position')  # 위치
-        ax.plot(x_values, vel_values, 'go-', label='Velocity')  # 속도
-        ax.plot(x_values, torque_values, 'bo-', label='Torque')  # 토크
+        ax.plot(x_values, vel_values, 'go-', linewidth=2, marker='o', markersize=5, label='Velocity')  # 속도
+        ax.plot(x_values, torque_values, 'bo-', linewidth=2, marker='o', markersize=5, label='Torque')  # 토크
         
+        # 데이터 포인트 위에 값 표시 (토크)
+        # for x, y in zip(x_values, torque_values):
+        #     ax.annotate(f'tor:{y:.3f}', xy=(x, y), xytext=(0, 15), textcoords='offset points', ha='center',fontsize=8)
+
+        # # 데이터 포인트 아래에 값 표시 (속도)
+        # for x, y in zip(x_values, vel_values):
+        #     ax.annotate(f'vel:{y:.3f}', xy=(x, y), xytext=(0, -20), textcoords='offset points', ha='center',fontsize=8)
+
+        # 각 모터별로 각 x 값에 해당하는 데이터 포인트에 대한 정보 표시
+        for motor_id, vel_value, torque_value, x in zip(motor_ids, vel_values, torque_values, x_values):
+            ax.text(x, -29, f'Velocity: {vel_value:.2f}\nTorque: {torque_value:.2f}',
+                    fontsize=8, ha='center', va='bottom')
+
+    
         # x 축 레이블 설정
         ax.set_xticks(x_values)
         ax.set_xticklabels([f'Motor {int(id)}' for id in motor_ids])
@@ -393,8 +408,11 @@ class MotorControlUI(QWidget):
         ax.legend()
 
         # y 축 범위 설정
-        ax.set_ylim(-30.0, 30.0)
-    
+        #ax.set_ylim(-30.0, 30.0)
+        ax.set_yticklabels
+        ax.set_yticks([i for i in range(-30, 31, 3)])  # 시작 값, 끝 값, 간격
+        ax.set_yticklabels(ax.get_yticks(), fontsize=9)  # 폰트 크기 지정
+
         self.plot_canvas.draw()  # 캔버스 리프레시
 
     def toggle_plot_visibility(self):
